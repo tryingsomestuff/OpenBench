@@ -198,7 +198,9 @@ def getCutechessCommand(data, scalefactor):
         ' -srand ' + str(int(time.time())) +
         ' -resign movecount=3 score=400'
         ' -draw movenumber=40 movecount=8 score=10'
-        ' -concurrency ' + str(int(math.floor(THREADS / max(devthreads, basethreads)))) +
+        # TODO: Lc0 probably doesn't want to run concurrent games
+        #' -concurrency ' + str(int(math.floor(THREADS / max(devthreads, basethreads)))) +
+        ' -concurrency 1' +
         ' -games ' + str(GAMES_PER_TASK) +
         ' -recover'
         ' -wait 10'

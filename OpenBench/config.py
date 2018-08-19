@@ -5,11 +5,12 @@ FRAMEWORK_DEFAULTS = {
     'config' : {
 
         # Framework source, must be changed for your instance
-        'framework'   : 'http://github.com/AndyGrant/OpenBench/',
+        # TODO: Also link AndyGrant's original and give credit publicly on webpage
+        'framework'   : 'http://github.com/killerducky/OpenBench/',
 
         # Links for side bar
-        'source'      : 'http://github.com/AndyGrant/EtherealDev/',
-        'homepage'    : 'http://github.com/AndyGrant/Ethereal',
+        'source'      : 'http://github.com/LeelaChessZero/',
+        'homepage'    : 'http://github.com/LeelaChessZero',
 
         # Default to uci since everyone uses it
         'protocol'    : 'uci',
@@ -40,19 +41,26 @@ FRAMEWORK_DEFAULTS = {
         # take a few bench runs for the latest version of the new engine.
         # Scale your NPS to match Ethereal's NPS of 1,750,000
         'engines'     : {
-            'Ethereal' : {
-                'name'    : 'Ethereal',
-                'source'  : 'https://github.com/AndyGrant/Ethereal',
-                'nps'     : 1550000,
-                'default' : True,
-            },
+            #'Ethereal' : {
+            #    'name'    : 'Ethereal',
+            #    'source'  : 'https://github.com/AndyGrant/Ethereal',
+            #    'nps'     : 1550000,
+            #    'default' : True,
+            #},
 
-            'Laser' : {
-                'name'    : 'Laser',
-                'source'  : 'https://github.com/jeffreyan11/uci-chess-engine',
-                'nps'     : 625000,
-                'default' : False,
-            },
+            #'Laser' : {
+            #    'name'    : 'Laser',
+            #    'source'  : 'https://github.com/jeffreyan11/uci-chess-engine',
+            #    'nps'     : 625000,
+            #    'default' : False,
+            #},
+
+            'Lc0' : {
+                'name'    : 'Lc0',
+                'source'  : 'https://github.com/LeelaChessZero/lc0',
+                'nps'     : 5000,
+                'default' : True,
+            }
         },
 
         # Book confgiruation. When addding a book, follow the provided template.
