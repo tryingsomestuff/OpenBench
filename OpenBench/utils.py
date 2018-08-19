@@ -44,7 +44,9 @@ def getSourceLocation(branch, repo):
         target = repo.replace('github.com', 'api.github.com/repos')
         target = target + 'branches/' + branch
         data   = requests.get(target).json()
-        source = repo + 'archive/' + data['commit']['commit']['tree']['sha'] + '.zip'
+        # TODO: Support both zip and clone methods
+        #source = repo + 'archive/' + data['commit']['commit']['tree']['sha'] + '.zip'
+        source = repo
         sha    = data['commit']['sha']
         return (sha, source)
 

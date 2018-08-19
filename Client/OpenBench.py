@@ -93,33 +93,24 @@ def getEngine(data):
     print('Commit      :', data['sha'])
     print('Source      :', source)
 
-    # TODO for now just hack
-    getFile('https://454-135489692-gh.circle-artifacts.com/0/lc0-ubuntu-18-04-g%2B%2B',
-        'Engines/{0}'.format(exe))
-    return
+    # TODO: For now just look for makefile, and if not there assume it's lc0 flow
+    if not os.path.isfile('tmp/{0}/src/makefile'.format(unzipname)):
+        source = re.sub('/$', '', source)
+        subprocess.Popen('git clone --recurse-submodules {0}.git tmp'.format(source).split()).wait()
+        subprocess.Popen('git checkout {0}'.format(name).split(), cwd='tmp').wait()
+        subprocess.Popen('/bin/bash build.sh'.split(), cwd='tmp').wait()
 
-    # Extract and delete the zip file
-    getFile(source, name + '.zip')
-    with zipfile.ZipFile(name + '.zip') as data:
-        data.extractall('tmp')
-    os.remove(name + '.zip')
+    else:
+        # Extract and delete the zip file
+        getFile(source, name + '.zip')
+        with zipfile.ZipFile(name + '.zip') as data:
+            data.extractall('tmp')
+        os.remove(name + '.zip')
 
-    if os.path.isfile('tmp/{0}/src/makefile'.format(unzipname)):
         # Build Engine using provided gcc and PGO flags
         subprocess.Popen(
             ['make', 'EXE={0}'.format(exe)],
             cwd='tmp/{0}/src/'.format(unzipname)).wait()
-
-    elif os.path.isfile('tmp/{0}/build.sh'.format(unzipname)):
-        # Build Engine using provided gcc and PGO flags
-        # TODO: Maybe add a fake makefile to lc0?
-        # TODO: build.sh outputs exe lc0, no way to rename it?
-        # TODO: Just downloading the github zip is not enough,
-        #    we need e.g. submodules etc!
-        print('call build.sh')
-        subprocess.Popen(
-            ['/bin/sh', 'build.sh'],
-            cwd='tmp/{0}'.format(unzipname)).wait()
 
     # Create the Engines directory if it does not exist
     if not os.path.isdir('Engines'):
@@ -132,9 +123,9 @@ def getEngine(data):
     elif os.path.isfile('tmp/{0}/src/{1}'.format(unzipname, name)):
         os.rename('tmp/{0}/src/{1}'.format(unzipname, name), 'Engines/{0}'.format(exe))
 
-    elif os.path.isfile('tmp/{0}/build/release/lc0'.format(unzipname)):
+    elif os.path.isfile('tmp/build/release/lc0'):
         print('rename lc0')
-        os.rename('tmp/{0}/build/release/lc0', 'Engines/{0}'.format(exe))
+        os.rename('tmp/build/release/lc0', 'Engines/{0}'.format(exe))
 
     # Cleanup the unzipped zip file
     shutil.rmtree('tmp')
