@@ -39,7 +39,10 @@ def gitDiffLink(test):
         devsha  = test.dev.sha
         basesha = test.base.sha
 
-    repo = '/'.join(dev.split('/')[:-2])
+    print("getDiffLink", dev, base)
+    # TODO: Broke when I changed to git clone instead of zipfile
+    #repo = '/'.join(dev.split('/')[:-2])
+    repo = dev
 
     return '{0}/compare/{1}...{2}'.format(repo, basesha[:8], devsha[:8])
 

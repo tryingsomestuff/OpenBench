@@ -38,11 +38,11 @@ def pagingContext(page, pageLength, items, url):
         "next"  : max(0, min(page + 1, pagenum - 1)),
     }
 
-def getSourceLocation(branch, repo):
+def getSourceLocation(branch_or_sha, repo):
 
     try:
         target = repo.replace('github.com', 'api.github.com/repos')
-        target = target + 'branches/' + branch
+        target = target + 'branches/' + branch_or_sha
         data   = requests.get(target).json()
         # TODO: Support both zip and clone methods
         #source = repo + 'archive/' + data['commit']['commit']['tree']['sha'] + '.zip'
@@ -51,7 +51,8 @@ def getSourceLocation(branch, repo):
         return (sha, source)
 
     except:
-        raise Exception('Unable to find branch ({0})'.format(branch))
+        # Assume we were unable to find the branch, because it was a sha instead.
+        return (branch_or_sha, repo)
 
 def newTest(request):
 
