@@ -3,6 +3,8 @@ from __future__ import print_function
 import ast, argparse, time, sys, platform, multiprocessing, hashlib
 import shutil, subprocess, requests, zipfile, os, math, json, re, shlex
 
+from bs4 import BeautifulSoup
+import urllib.request as urllib
 
 ## Configuration
 HTTP_TIMEOUT   = 30  # Timeout in seconds for web requests
@@ -31,6 +33,10 @@ IS_WINDOWS = platform.system() == 'Windows'
 
 # Server wants to identify different machines
 OS_NAME = platform.system() + ' ' + platform.release()
+
+# Network download links hash
+# TODO probably should be keyed by Engine also?
+NETWORKS = {}
 
 # Solution taken from Fishtest
 def killProcess(process):
@@ -130,7 +136,58 @@ def getEngine(data):
     # Cleanup the unzipped zip file
     shutil.rmtree('tmp')
 
+def get_content(site):
+    hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+       'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+       'Accept-Encoding': 'none',
+       'Accept-Language': 'en-US,en;q=0.8',
+       'Connection': 'keep-alive'}
+
+    req = urllib.Request(site, headers=hdr)
+
+    try:
+        page = urllib.urlopen(req)
+    except urllib.HTTPError as e:
+        print(e.fp.read())
+
+    content = page.read()
+    return content
+
+def getNetwork(options):
+
+    # TODO: bunch of lc0 specific hardcoded stuff here
+    tokens = options.split()
+    for token in tokens:
+        (name, value) = token.split('=')
+        if name != 'Network_weights_file_path': continue
+        if os.path.isfile('Networks/{0}'.format(value)): continue
+        if not value in NETWORKS:
+            # Update cache of network download links from server
+            print('Update network download links cache')
+            content = get_content('http://testserver.lczero.org/networks')
+            soup = BeautifulSoup(content, 'lxml')
+            tags = soup.find_all('a')
+            for tag in tags:
+                download = str(tag.get('download'))
+                m = re.search('^weights_(\d+).txt.gz$', download)
+                if m:
+                    net = m.groups(1)[0]
+                    netlink = str(tag.get('href'))
+                    downlink = 'http://testserver.lczero.org' + netlink
+                    NETWORKS[net] = downlink
+                    print('net ', net, downlink)
+        if not value in NETWORKS:
+            # Still cannot find network downlink
+            print ('<ERROR> Cannot find network %s'.format(value))
+            sys.exit()
+        print('Download {0} from {1}'.format(value, NETWORKS[value]))
+        download = get_content(NETWORKS[value])
+        with open('Networks/{0}'.format(value), 'wb') as f:
+            f.write(download)
+
 def lc0_uci_workarounds(uci_opts):
+
     # Remove underscores and add quotes
     # Also give full path to networks dir
     networks_dir = os.getcwd() + "/Networks/"
@@ -353,6 +410,10 @@ def completeWorkload(data):
         reportWrongBench(data, data['test']['base'])
         return
 
+    # Download network files
+    getNetwork(data['test']['dev']['options'])
+    getNetwork(data['test']['base']['options'])
+
     # Download and verify sha of the opening book
     print('\nVERIFYING OPENING BOOK')
     if not os.path.isfile(data['test']['book']['name']):
@@ -403,8 +464,8 @@ def completeWorkload(data):
         if line.startswith('Finished match') or 'Elo difference' in line:
             killProcess(process)
             if sum(score) == 0:
-                print('Fatal error: cutechess finished with no match results')
-                sys.exit(1)
+                print('<ERROR> cutechess finished with no match results')
+                sys.exit()
             break
 
         # Parse engine crashes
