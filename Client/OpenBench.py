@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import ast, argparse, time, sys, platform, multiprocessing, hashlib
-import shutil, subprocess, requests, zipfile, os, math, json
+import shutil, subprocess, requests, zipfile, os, math, json, re, shlex
 
 
 ## Configuration
@@ -93,16 +93,33 @@ def getEngine(data):
     print('Commit      :', data['sha'])
     print('Source      :', source)
 
+    # TODO for now just hack
+    getFile('https://454-135489692-gh.circle-artifacts.com/0/lc0-ubuntu-18-04-g%2B%2B',
+        'Engines/{0}'.format(exe))
+    return
+
     # Extract and delete the zip file
     getFile(source, name + '.zip')
     with zipfile.ZipFile(name + '.zip') as data:
         data.extractall('tmp')
     os.remove(name + '.zip')
 
-    # Build Engine using provided gcc and PGO flags
-    subprocess.Popen(
-        ['make', 'EXE={0}'.format(exe)],
-        cwd='tmp/{0}/src/'.format(unzipname)).wait()
+    if os.path.isfile('tmp/{0}/src/makefile'.format(unzipname)):
+        # Build Engine using provided gcc and PGO flags
+        subprocess.Popen(
+            ['make', 'EXE={0}'.format(exe)],
+            cwd='tmp/{0}/src/'.format(unzipname)).wait()
+
+    elif os.path.isfile('tmp/{0}/build.sh'.format(unzipname)):
+        # Build Engine using provided gcc and PGO flags
+        # TODO: Maybe add a fake makefile to lc0?
+        # TODO: build.sh outputs exe lc0, no way to rename it?
+        # TODO: Just downloading the github zip is not enough,
+        #    we need e.g. submodules etc!
+        print('call build.sh')
+        subprocess.Popen(
+            ['/bin/sh', 'build.sh'],
+            cwd='tmp/{0}'.format(unzipname)).wait()
 
     # Create the Engines directory if it does not exist
     if not os.path.isdir('Engines'):
@@ -115,8 +132,27 @@ def getEngine(data):
     elif os.path.isfile('tmp/{0}/src/{1}'.format(unzipname, name)):
         os.rename('tmp/{0}/src/{1}'.format(unzipname, name), 'Engines/{0}'.format(exe))
 
+    elif os.path.isfile('tmp/{0}/build/release/lc0'.format(unzipname)):
+        print('rename lc0')
+        os.rename('tmp/{0}/build/release/lc0', 'Engines/{0}'.format(exe))
+
     # Cleanup the unzipped zip file
     shutil.rmtree('tmp')
+
+def lc0_uci_workarounds(uci_opts):
+    # Remove underscores and add quotes
+    # Also give full path to networks dir
+    networks_dir = os.getcwd() + "/Networks/"
+    for i in range(len(uci_opts)):
+        uci_opts[i] = uci_opts[i].replace('_', ' ')
+        # Network file needs full path
+        if re.match("Network weights file path", uci_opts[i]):
+            uci_opts[i] = re.sub("=", "="+networks_dir, uci_opts[i])
+        # OLD : LC0_UCI_Option=1
+        # NEW : "LC0 UCI Option"=1
+        uci_opts[i] = '"' + uci_opts[i]
+        uci_opts[i] = uci_opts[i].replace('=', '"=')
+    return uci_opts
 
 def getCutechessCommand(data, scalefactor):
 
@@ -148,12 +184,16 @@ def getCutechessCommand(data, scalefactor):
         timecontrol = str(start) + '+' + str(inc)
 
     # Find Threads / Options for the Dev Engine
-    tokens = data['test']['dev']['options'].split(' ')
+    tokens = data['test']['dev']['options'].split()
+    #tokens = shlex.split(data['test']['dev']['options'])
+    tokens = lc0_uci_workarounds(tokens)
     devthreads = int(tokens[0].split('=')[1])
     devoptions = ' option.'.join(['']+tokens)
 
     # Find Threads / Options for the Base Engine
-    tokens = data['test']['base']['options'].split(' ')
+    tokens = data['test']['base']['options'].split()
+    #tokens = shlex.split(data['test']['base']['options'])
+    tokens = lc0_uci_workarounds(tokens)
     basethreads = int(tokens[0].split('=')[1])
     baseoptions = ' option.'.join(['']+tokens)
 
@@ -222,6 +262,8 @@ def singleCoreBench(name, outqueue):
     except: outqueue.put((0, 0))
 
 def getBenchSignature(engine):
+    print ('\nTODO skipping Benchmark')
+    return (1,1)
 
     print ('\nRunning Benchmark for {0} on {1} cores'.format(engine['name'], THREADS))
 
@@ -331,7 +373,9 @@ def completeWorkload(data):
     # Compute and report CPU scaling factor
     avgnps = (devnps + basenps) / 2.0
     reportNPS(data, avgnps)
-    scalefactor = int(data['test']['nps']) / avgnps
+    #scalefactor = int(data['test']['nps']) / avgnps
+    # TODO
+    scalefactor = 1.0
     print ('\nFACTOR    : {0}'.format(round(1 / scalefactor, 2)))
 
     # Compute and report cutechess-cli string
@@ -340,7 +384,7 @@ def completeWorkload(data):
 
     # Spawn cutechess process
     process = subprocess.Popen(
-        command.split(),
+        shlex.split(command),
         stdout=subprocess.PIPE
     )
 
@@ -363,6 +407,9 @@ def completeWorkload(data):
         # Search for the end of the cutechess process
         if line.startswith('Finished match') or 'Elo difference' in line:
             killProcess(process)
+            if sum(score) == 0:
+                print('Fatal error: cutechess finished with no match results')
+                sys.exit(1)
             break
 
         # Parse engine crashes
