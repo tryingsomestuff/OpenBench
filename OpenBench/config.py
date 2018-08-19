@@ -8,10 +8,6 @@ FRAMEWORK_DEFAULTS = {
         # TODO: Also link AndyGrant's original and give credit publicly on webpage
         'framework'   : 'http://github.com/killerducky/OpenBench/',
 
-        # Links for side bar
-        'source'      : 'http://github.com/LeelaChessZero/',
-        'homepage'    : 'http://github.com/LeelaChessZero',
-
         # Default to uci since everyone uses it
         'protocol'    : 'uci',
 
