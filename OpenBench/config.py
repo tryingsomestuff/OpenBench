@@ -21,7 +21,7 @@
 OPENBENCH_CONFIG = {
 
     'error' : {
-        'disabled' : 'Account has not been enabled. Contact andrew@grantnet.us',
+        'disabled' : 'Account has not been enabled. Contact xr_a_y@yahoo.fr',
         'fakeuser' : 'This is not a real OpenBench User. Create an OpenBench account',
     },
 
@@ -67,6 +67,7 @@ OPENBENCH_CONFIG = {
             'source'  : 'http://github.com/AndyGrant/OpenBench/raw/master/Books/4moves_noob.pgn',
             'default' : True,
         },
+
     },
 
 
@@ -180,5 +181,22 @@ OPENBENCH_CONFIG = {
                 'smpltc'  : { 'threads' : 8, 'hash' : 256, 'timecontrol' : '20.0+0.2' },
             },
         },
+
+        'Minic' : {
+            'proto'     : 'uci',
+            'nps'       : 1275000,
+            'buildpath' : '',
+            'outpath'   : '/Dist/Minic2/',
+            'exename'   : 'minic_dev_linux_x64',
+            'source'    : 'https://github.com/tryingsomestuff/Minic',
+            'build'     : { 'path' : '', 'compilers' : ['g++'] },
+            'testmodes' : {
+                'stc'     : { 'threads' : 1, 'hash' :   8, 'timecontrol' : '20.0+0.2' },
+                'ltc'     : { 'threads' : 1, 'hash' :  64, 'timecontrol' : '60.0+0.6' },
+                'smpstc'  : { 'threads' : 8, 'hash' :  64, 'timecontrol' : '10.0+0.1' },
+                'smpltc'  : { 'threads' : 8, 'hash' : 256, 'timecontrol' : '30.0+0.3' },
+             },
+        }
+
     },
 }

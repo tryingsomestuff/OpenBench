@@ -212,7 +212,8 @@ def getEngine(data, engine):
     tokens = engine['source'].split('/')
     unzipname = '{0}-{1}'.format(tokens[-3], tokens[-1].replace('.zip', ''))
     getAndUnzipFile(engine['source'], '{0}.zip'.format(engine['name']), 'tmp')
-    pathway = pathjoin('tmp/{0}/'.format(unzipname), data['test']['build']['path'])
+    buildpath = pathjoin('tmp/{0}/'.format(unzipname), data['test']['buildpath'])
+    outpath = pathjoin('tmp/{0}/'.format(unzipname), data['test']['outpath'])
 
     # Basic make assumption and an EXE= hook
     command = ['make', 'EXE={0}'.format(engine['name'])]
@@ -227,10 +228,10 @@ def getEngine(data, engine):
 
     # Build the engine. If something goes wrong with the
     # compilation process, we will figure this out later on
-    subprocess.Popen(command, cwd=pathway).wait(); print("")
+    subprocess.Popen(command, cwd=buildpath).wait()
 
     # Move the binary to the /Engines/ directory
-    output = '{0}{1}'.format(pathway, engine['name'])
+    output = '{0}{1}'.format(outpath, data['test']['exename'])
     destination = addExtension(pathjoin('Engines', engine['sha']).rstrip('/'))
 
     # Check to see if the compiler included a file extension or not
@@ -317,10 +318,10 @@ def parseStreamOutput(output):
         line = re.sub(r'[^a-zA-Z0-9 ]+', ' ', line)
 
         # Search for node or speed counters
-        bench1 = re.search(r'[0-9]+ NODES', line.upper())
-        bench2 = re.search(r'NODES[ ]+[0-9]+', line.upper())
-        speed1 = re.search(r'[0-9]+ NPS'  , line.upper())
-        speed2 = re.search(r'NPS[ ]+[0-9]+'  , line.upper())
+        bench1 = re.search(r'[0-9]+ NODES', line)
+        bench2 = re.search(r'NODES[ ]+[0-9]+', line)
+        speed1 = re.search(r'[0-9]+ NPS'  , line)
+        speed2 = re.search(r'NPS[ ]+[0-9]+'  , line)
 
         # A line with no parsable information was found
         if not bench1 and not bench2 and not speed1 and not speed2:
